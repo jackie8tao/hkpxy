@@ -16,8 +16,10 @@ func (p *Pipe) Run() {
 }
 
 func transfer(src, dst net.Conn) {
-	defer src.Close()
-	defer dst.Close()
+	defer func() {
+		_ = src.Close()
+		_ = dst.Close()
+	}()
 
 	buf := make([]byte, BufSize)
 	for {

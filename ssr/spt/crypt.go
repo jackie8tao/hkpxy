@@ -1,6 +1,11 @@
 package spt
 
-import "crypto/md5"
+import (
+	"crypto/md5"
+	"crypto/rand"
+	"errors"
+	"io"
+)
 
 func Md5Sum(data []byte) (val []byte, err error) {
 	h := md5.New()
@@ -38,5 +43,17 @@ func EvpBytes2Key(password string, keyLen int) (key []byte, err error) {
 		copy(m[start:], val)
 	}
 	key = m[:keyLen]
+	return
+}
+
+func IV(ivLen int) (iv []byte, err error) {
+	iv = make([]byte, ivLen)
+	n, err := io.ReadFull(rand.Reader, iv)
+	if err != nil {
+		return
+	}
+	if n != ivLen {
+		err = errors.New("invalid random iv")
+	}
 	return
 }

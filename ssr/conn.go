@@ -1,19 +1,20 @@
 package ssr
 
 import (
+	"io"
 	"net"
 
-	"github.com/jackie8tao/hkpxy/ssr/crypt"
+	"github.com/jackie8tao/hkpxy/ssr/spt"
 )
 
 type Conn struct {
 	net.Conn
-	crypt.Cryptor
+	Cryptor
 	readBuf  []byte
 	writeBuf []byte
 }
 
-func NewConn(c net.Conn, m crypt.Cryptor) *Conn {
+func NewConn(c net.Conn, m Cryptor) *Conn {
 	return &Conn{
 		Conn:     c,
 		Cryptor:  m,
@@ -27,7 +28,7 @@ func DialRemote(addr, method, password string) (c *Conn, err error) {
 	if err != nil {
 		return
 	}
-	cipher, err := crypt.NewCipher(method, password)
+	cipher, err := NewCipher(method, password)
 	if err != nil {
 		return
 	}
@@ -41,6 +42,17 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 		sz  int
 	)
 
+	iv := make([]byte, c.Cryptor.IVLen())
+	n, err = io.ReadFull(c.Conn, iv)
+	if err != nil {
+		return
+	}
+
+	s, err := c.Cryptor.NewDec(iv)
+	if err != nil {
+		return
+	}
+
 	sz = len(b)
 	if sz > BufSize {
 		buf = make([]byte, sz)
@@ -50,7 +62,7 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 
 	n, err = c.Conn.Read(buf)
 	if n > 0 {
-		c.Decrypt(b[:n], buf[:n])
+		s.XORKeyStream(b[:n], buf[:n])
 	}
 	return
 }
@@ -61,18 +73,23 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 		sz  int
 	)
 
-	sz = len(b) + len(c.Iv())
+	iv, err := spt.IV(c.Cryptor.IVLen())
+	if err != nil {
+		return
+	}
+	s, err := c.Cryptor.NewEnc(iv)
+	if err != nil {
+		return
+	}
+
+	sz = len(b) + len(iv)
 	if sz > BufSize {
 		buf = make([]byte, sz)
 	} else {
 		buf = c.writeBuf[:sz]
 	}
-
-	if c.Iv() != nil {
-		copy(buf, c.Iv())
-	}
-
-	c.Encrypt(buf[len(c.Iv()):], b)
+	copy(buf, iv)
+	s.XORKeyStream(buf[len(iv):], b)
 	n, err = c.Conn.Write(b)
 	return
 }

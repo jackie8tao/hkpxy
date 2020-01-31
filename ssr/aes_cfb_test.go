@@ -1,4 +1,4 @@
-package crypt
+package ssr
 
 import "testing"
 

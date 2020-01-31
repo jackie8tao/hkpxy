@@ -1,10 +1,13 @@
-package crypt
+package ssr
+
+import "crypto/cipher"
 
 type Cryptor interface {
-	Init(key string, iv ...string)
-	Iv() []byte
-	Encrypt(dst, src []byte)
-	Decrypt(dst, src []byte)
+	Init(password string)
+	KeyLen() int
+	IVLen() int
+	NewEnc(iv []byte) (cipher.Stream, error)
+	NewDec(iv []byte) (cipher.Stream, error)
 }
 
 const (
@@ -25,7 +28,6 @@ func NewCipher(method, password string) (c Cryptor, err error) {
 	if !ok {
 		err = errMethod
 	}
-
 	c.Init(password)
 	return
 }

@@ -33,3 +33,11 @@ func TestBytes2Key(t *testing.T) {
 		t.Errorf("key not correct\n\texpect: %v\n\tgot: %v\n", target, key)
 	}
 }
+
+func TestIV(t *testing.T) {
+	iv, err := IV(16)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("%x", iv)
+}
