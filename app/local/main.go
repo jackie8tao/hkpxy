@@ -55,7 +55,7 @@ func handleConn(conn net.Conn) {
 		return
 	}
 	p := &ssr.Pipe{Lcl: conn, Rmt: rmt}
-	p.Run()
+	go p.Run()
 	return
 }
 
@@ -152,7 +152,7 @@ func request(conn net.Conn) (addr []byte, err error) {
 }
 
 func connRemote(addr []byte) (conn net.Conn, err error) {
-	conn, err = ssr.DialRemote("119.28.41.79:8389", ssr.AES128CFB, "taodingfei13441344")
+	conn, err = ssr.DialRemote("127.0.0.1:8388", ssr.AES128CFB, "taodingfei13441344")
 	if err != nil {
 		return
 	}

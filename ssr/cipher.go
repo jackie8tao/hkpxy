@@ -1,13 +1,12 @@
 package ssr
 
-import "crypto/cipher"
-
-type Cryptor interface {
-	Init(password string)
+type iCipher interface {
+	Setup(password string) error
+	Decrypt(val []byte) ([]byte, error)
+	Encrypt(val []byte) ([]byte, error)
+	Clone() iCipher
+	IvLen() int
 	KeyLen() int
-	IVLen() int
-	NewEnc(iv []byte) (cipher.Stream, error)
-	NewDec(iv []byte) (cipher.Stream, error)
 }
 
 const (
@@ -16,18 +15,18 @@ const (
 	AES256CFB = "aes-256-cfb"
 )
 
-var _ciphers = map[string]Cryptor{
+var _ciphers = map[string]iCipher{
 	AES128CFB: &aesCfb{keyLen: 16, ivLen: 16},
 	AES192CFB: &aesCfb{keyLen: 24, ivLen: 16},
 	AES256CFB: &aesCfb{keyLen: 32, ivLen: 16},
 }
 
-func NewCipher(method, password string) (c Cryptor, err error) {
-	var ok bool
-	c, ok = _ciphers[method]
+func newCipher(method, password string) (c iCipher, err error) {
+	val, ok := _ciphers[method]
 	if !ok {
 		err = errMethod
 	}
-	c.Init(password)
+	c = val.Clone()
+	err = c.Setup(password)
 	return
 }

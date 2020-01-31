@@ -1,23 +1,20 @@
 package ssr
 
 import (
-	"io"
 	"net"
-
-	"github.com/jackie8tao/hkpxy/ssr/spt"
 )
 
 type Conn struct {
 	net.Conn
-	Cryptor
+	iCipher
 	readBuf  []byte
 	writeBuf []byte
 }
 
-func NewConn(c net.Conn, m Cryptor) *Conn {
+func NewConn(c net.Conn, m iCipher) *Conn {
 	return &Conn{
 		Conn:     c,
-		Cryptor:  m,
+		iCipher:  m,
 		readBuf:  make([]byte, BufSize),
 		writeBuf: make([]byte, BufSize),
 	}
@@ -28,7 +25,7 @@ func DialRemote(addr, method, password string) (c *Conn, err error) {
 	if err != nil {
 		return
 	}
-	cipher, err := NewCipher(method, password)
+	cipher, err := newCipher(method, password)
 	if err != nil {
 		return
 	}
@@ -37,59 +34,28 @@ func DialRemote(addr, method, password string) (c *Conn, err error) {
 }
 
 func (c *Conn) Read(b []byte) (n int, err error) {
-	var (
-		buf []byte
-		sz  int
-	)
-
-	iv := make([]byte, c.Cryptor.IVLen())
-	n, err = io.ReadFull(c.Conn, iv)
-	if err != nil {
-		return
-	}
-
-	s, err := c.Cryptor.NewDec(iv)
-	if err != nil {
-		return
-	}
-
-	sz = len(b)
-	if sz > BufSize {
-		buf = make([]byte, sz)
-	} else {
-		buf = c.readBuf[:sz]
-	}
-
+	buf := make([]byte, len(b))
 	n, err = c.Conn.Read(buf)
+	if err != nil {
+		return
+	}
 	if n > 0 {
-		s.XORKeyStream(b[:n], buf[:n])
+		var ret []byte
+		ret, err = c.iCipher.Decrypt(buf[:n])
+		if len(ret) > 0 {
+			copy(b, ret)
+		}
+		n = len(ret)
 	}
 	return
 }
 
 func (c *Conn) Write(b []byte) (n int, err error) {
-	var (
-		buf []byte
-		sz  int
-	)
-
-	iv, err := spt.IV(c.Cryptor.IVLen())
+	var buf []byte
+	buf, err = c.iCipher.Encrypt(b)
 	if err != nil {
 		return
 	}
-	s, err := c.Cryptor.NewEnc(iv)
-	if err != nil {
-		return
-	}
-
-	sz = len(b) + len(iv)
-	if sz > BufSize {
-		buf = make([]byte, sz)
-	} else {
-		buf = c.writeBuf[:sz]
-	}
-	copy(buf, iv)
-	s.XORKeyStream(buf[len(iv):], b)
-	n, err = c.Conn.Write(b)
+	n, err = c.Conn.Write(buf)
 	return
 }

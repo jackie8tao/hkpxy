@@ -1,6 +1,7 @@
 package ssr
 
 import (
+	"io"
 	"log"
 	"net"
 )
@@ -11,28 +12,41 @@ type Pipe struct {
 }
 
 func (p *Pipe) Run() {
-	transfer(p.Lcl, p.Rmt)    /*send*/
-	go transfer(p.Rmt, p.Lcl) /*recv*/
+	sig := make(chan bool)
+	go transfer(p.Lcl, p.Rmt, sig) /*send*/
+	go transfer(p.Rmt, p.Lcl, sig) /*recv*/
+
+	count := 0
+	for {
+		select {
+		case closed := <-sig:
+			if closed {
+				count++
+				if count >= 2 {
+					p.Lcl.Close()
+					p.Rmt.Close()
+				}
+			}
+		}
+	}
 }
 
-func transfer(src, dst net.Conn) {
-	defer func() {
-		_ = src.Close()
-		_ = dst.Close()
-	}()
-
+func transfer(src, dst net.Conn, sig chan bool) {
 	buf := make([]byte, BufSize)
 	for {
 		n, err := src.Read(buf)
 		if err != nil {
-			log.Println(err)
+			if err != io.EOF {
+				log.Println(err)
+			}
+			sig <- true
 			return
 		}
 		if n > 0 {
-			log.Printf("%x\n", buf[:n])
 			_, err := dst.Write(buf[0:n])
 			if err != nil {
 				log.Println(err)
+				sig <- true
 				return
 			}
 		}
