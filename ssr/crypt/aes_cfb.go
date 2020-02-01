@@ -1,9 +1,9 @@
-package ssr
+package crypt
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
-
+	
 	"github.com/jackie8tao/hkpxy/ssr/spt"
 )
 
@@ -71,18 +71,10 @@ func (c *aesCfb) Decrypt(val []byte) (ret []byte, err error) {
 	return
 }
 
-func (c *aesCfb) Clone() iCipher {
+func (c *aesCfb) Clone() ICipher {
 	return &aesCfb{
 		key:    c.key,
 		keyLen: c.keyLen,
 		ivLen:  c.ivLen,
 	}
-}
-
-func (c *aesCfb) KeyLen() int {
-	return c.keyLen
-}
-
-func (c *aesCfb) IvLen() int {
-	return c.ivLen
 }

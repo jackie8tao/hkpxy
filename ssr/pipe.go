@@ -12,26 +12,15 @@ type Pipe struct {
 }
 
 func (p *Pipe) Run() {
-	sig := make(chan bool)
-	go transfer(p.Lcl, p.Rmt, sig) /*send*/
-	go transfer(p.Rmt, p.Lcl, sig) /*recv*/
-
-	count := 0
-	for {
-		select {
-		case closed := <-sig:
-			if closed {
-				count++
-				if count >= 2 {
-					p.Lcl.Close()
-					p.Rmt.Close()
-				}
-			}
-		}
-	}
+	defer func() {
+		_ = p.Rmt.Close()
+		_ = p.Lcl.Close()
+	}()
+	go transfer(p.Lcl, p.Rmt) /*send*/
+	transfer(p.Rmt, p.Lcl)    /*recv*/
 }
 
-func transfer(src, dst net.Conn, sig chan bool) {
+func transfer(src, dst net.Conn) {
 	buf := make([]byte, BufSize)
 	for {
 		n, err := src.Read(buf)
@@ -39,14 +28,12 @@ func transfer(src, dst net.Conn, sig chan bool) {
 			if err != io.EOF {
 				log.Println(err)
 			}
-			sig <- true
 			return
 		}
 		if n > 0 {
 			_, err := dst.Write(buf[0:n])
 			if err != nil {
 				log.Println(err)
-				sig <- true
 				return
 			}
 		}

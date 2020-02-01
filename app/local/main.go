@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/jackie8tao/hkpxy/ssr"
+	"github.com/jackie8tao/hkpxy/ssr/crypt"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 }
 
 func run() {
-	l, err := net.Listen("tcp", "127.0.0.1:1080")
+	l, err := net.Listen("tcp", "127.0.0.1:1081")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -152,7 +153,7 @@ func request(conn net.Conn) (addr []byte, err error) {
 }
 
 func connRemote(addr []byte) (conn net.Conn, err error) {
-	conn, err = ssr.DialRemote("127.0.0.1:8388", ssr.AES128CFB, "taodingfei13441344")
+	conn, err = ssr.DialRemote("127.0.0.1:8388", crypt.AES128CFB, "taodingfei13441344")
 	if err != nil {
 		return
 	}
