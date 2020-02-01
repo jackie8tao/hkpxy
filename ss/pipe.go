@@ -1,9 +1,10 @@
-package ssr
+package ss
 
 import (
 	"io"
-	"log"
 	"net"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Pipe struct {

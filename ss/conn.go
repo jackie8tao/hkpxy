@@ -1,24 +1,18 @@
-package ssr
+package ss
 
 import (
-	"github.com/jackie8tao/hkpxy/ssr/crypt"
 	"net"
+
+	"github.com/jackie8tao/hkpxy/ss/crypt"
 )
 
 type Conn struct {
 	net.Conn
 	crypt.ICipher
-	readBuf  []byte
-	writeBuf []byte
 }
 
 func NewConn(c net.Conn, m crypt.ICipher) *Conn {
-	return &Conn{
-		Conn:     c,
-		ICipher:  m,
-		readBuf:  make([]byte, BufSize),
-		writeBuf: make([]byte, BufSize),
-	}
+	return &Conn{Conn: c, ICipher: m}
 }
 
 func DialRemote(addr, method, password string) (c *Conn, err error) {

@@ -1,17 +1,47 @@
 package main
 
 import (
+	"flag"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 
-	"github.com/jackie8tao/hkpxy/ssr"
-	"github.com/jackie8tao/hkpxy/ssr/crypt"
+	"github.com/jackie8tao/hkpxy/ss"
+	"github.com/jackie8tao/hkpxy/ss/cfg"
+	log "github.com/sirupsen/logrus"
 )
 
+var _cfg *cfg.Config
+
+func init() {
+	_cfg = &cfg.Config{}
+}
+
 func main() {
+	var (
+		err     error
+		cfgPath string
+	)
+
+	flag.StringVar(&cfgPath, "c", "", "specify config file")
+	flag.StringVar(&_cfg.Remote.Host, "s", "127.0.0.1", "server address")
+	flag.UintVar(&_cfg.Remote.Port, "p", 8838, "server port")
+	flag.StringVar(&_cfg.Local.Host, "b", "127.0.0.1", "local address")
+	flag.UintVar(&_cfg.Local.Port, "l", 1080, "local socks5 port")
+	flag.StringVar(&_cfg.Method, "m", "aes-256-cfb", "encryption method, default: aes-256-cfb")
+	flag.StringVar(&_cfg.Password, "k", "foobar", "password, default: foobar")
+	flag.IntVar(&_cfg.Timeout, "t", 300, "timeout in seconds")
+
+	flag.Parse()
+
+	if cfgPath != "" {
+		_cfg, err = cfg.Parse(cfgPath)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
 	go run()
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
@@ -19,7 +49,7 @@ func main() {
 }
 
 func run() {
-	l, err := net.Listen("tcp", "127.0.0.1:1081")
+	l, err := net.Listen("tcp", _cfg.LocalVal())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -55,7 +85,7 @@ func handleConn(conn net.Conn) {
 		log.Println(err)
 		return
 	}
-	p := &ssr.Pipe{Lcl: conn, Rmt: rmt}
+	p := &ss.Pipe{Lcl: conn, Rmt: rmt}
 	go p.Run()
 	return
 }
@@ -72,7 +102,7 @@ func handshake(conn net.Conn) error {
 		return err
 	}
 
-	if buf[idVer] != ssr.Ss5VerVal {
+	if buf[idVer] != ss.Ss5VerVal {
 		return errVer
 	}
 
@@ -88,7 +118,7 @@ func handshake(conn net.Conn) error {
 		}
 	}
 
-	_, err = conn.Write([]byte{ssr.Ss5VerVal, ssr.Ss5NoAuthVal})
+	_, err = conn.Write([]byte{ss.Ss5VerVal, ss.Ss5NoAuthVal})
 	if err != nil {
 		return err
 	}
@@ -115,22 +145,22 @@ func request(conn net.Conn) (addr []byte, err error) {
 		return
 	}
 
-	if buf[idVer] != ssr.Ss5VerVal {
+	if buf[idVer] != ss.Ss5VerVal {
 		err = errVer
 		return
 	}
-	if buf[idCmd] != ssr.Ss5CmdConnect {
+	if buf[idCmd] != ss.Ss5CmdConnect {
 		err = errCmd
 		return
 	}
 
 	msgLen := 0
 	switch buf[idAtyp] {
-	case ssr.Ss5AtypIpV4:
+	case ss.Ss5AtypIpV4:
 		msgLen = lenIPv4
-	case ssr.Ss5AtypIpV6:
+	case ss.Ss5AtypIpV6:
 		msgLen = lenIPv6
-	case ssr.Ss5AtypDomain:
+	case ss.Ss5AtypDomain:
 		msgLen = int(buf[idDmLen]) + lenDmBase
 	default:
 		err = errAddr
@@ -153,7 +183,9 @@ func request(conn net.Conn) (addr []byte, err error) {
 }
 
 func connRemote(addr []byte) (conn net.Conn, err error) {
-	conn, err = ssr.DialRemote("127.0.0.1:8388", crypt.AES128CFB, "taodingfei13441344")
+	conn, err = ss.DialRemote(
+		_cfg.RemoteVal(), _cfg.Method, _cfg.Password,
+	)
 	if err != nil {
 		return
 	}

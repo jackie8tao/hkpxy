@@ -3,8 +3,8 @@ package crypt
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	
-	"github.com/jackie8tao/hkpxy/ssr/spt"
+
+	"github.com/jackie8tao/hkpxy/ss/spt"
 )
 
 type aesCfb struct {
