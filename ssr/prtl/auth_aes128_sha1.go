@@ -13,6 +13,9 @@ func newAuthAES128SHA1() IProtocol {
 		hashDigest: spt.SHA1Sum,
 		packID:     1,
 		recvID:     1,
+		data: &authData{
+			connectionID: 0xFF000001,
+		},
 	}
 	return a
 }

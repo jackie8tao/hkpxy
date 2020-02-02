@@ -18,6 +18,11 @@ type aesCfb struct {
 
 func (c *aesCfb) Setup(key string) error {
 	c.key = spt.EVPBytes2Key(key, c.keyLen)
+	iv, err := spt.IV(c.ivLen)
+	if err != nil {
+		return err
+	}
+	c.iv = iv
 	return nil
 }
 
@@ -29,16 +34,9 @@ func (c *aesCfb) Encrypt(val []byte) (ret []byte, err error) {
 		if err != nil {
 			return
 		}
-		iv, err = spt.IV(c.ivLen)
-		if err != nil {
-			return
-		}
-		if c.iv == nil {
-			c.iv = iv
-		}
-		c.enc = cipher.NewCFBEncrypter(blk, iv)
+		iv = c.iv
+		c.enc = cipher.NewCFBEncrypter(blk, c.iv)
 	}
-
 	ret = make([]byte, len(val)+len(iv))
 	if iv != nil {
 		copy(ret, iv)

@@ -17,6 +17,11 @@ type aesCtr struct {
 
 func (c *aesCtr) Setup(key string) error {
 	c.key = spt.EVPBytes2Key(key, c.keyLen)
+	iv, err := spt.IV(c.ivLen)
+	if err != nil {
+		return err
+	}
+	c.iv = iv
 	return nil
 }
 
@@ -28,13 +33,7 @@ func (c *aesCtr) Encrypt(val []byte) (ret []byte, err error) {
 		if err != nil {
 			return
 		}
-		iv, err = spt.IV(c.ivLen)
-		if err != nil {
-			return
-		}
-		if c.iv == nil {
-			c.iv = iv
-		}
+		iv = c.iv
 		c.enc = cipher.NewCTR(blk, iv)
 	}
 

@@ -29,6 +29,9 @@ func newAuthAES128MD5() IProtocol {
 		hashDigest: spt.MD5Sum,
 		packID:     1,
 		recvID:     1,
+		data: &authData{
+			connectionID: 0xFF000001,
+		},
 	}
 	return a
 }

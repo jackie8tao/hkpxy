@@ -31,7 +31,9 @@ type tls12TicketAuth struct {
 
 // newTLS12TicketAuth create a tlv1.2_ticket_auth object
 func newTLS12TicketAuth() IObfs {
-	return &tls12TicketAuth{}
+	return &tls12TicketAuth{
+		data: &tlsAuthData{},
+	}
 }
 
 func (t *tls12TicketAuth) SetServerInfo(s *spt.ServerInfoForObfs) {

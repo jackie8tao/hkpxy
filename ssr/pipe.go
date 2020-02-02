@@ -32,7 +32,7 @@ func transfer(src, dst net.Conn) {
 			return
 		}
 		if n > 0 {
-			log.Printf("%s", buf[:n])
+			log.Printf("%x\n", buf[:n])
 			_, err := dst.Write(buf[0:n])
 			if err != nil {
 				log.Println(err)
