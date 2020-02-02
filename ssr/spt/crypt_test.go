@@ -7,7 +7,7 @@ import (
 )
 
 func TestMd5Sum(t *testing.T) {
-	val, err := Md5Sum([]byte("foobar"))
+	val, err := MD5Sum([]byte("foobar"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -19,7 +19,7 @@ func TestMd5Sum(t *testing.T) {
 }
 
 func TestBytes2Key(t *testing.T) {
-	key, err := EvpBytes2Key("foobar", 32)
+	key, err := EVPBytes2Key("foobar", 32)
 	if err != nil {
 		t.Error(err)
 	}

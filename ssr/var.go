@@ -1,4 +1,4 @@
-package ss
+package ssr
 
 const (
 	BufSize        = 512

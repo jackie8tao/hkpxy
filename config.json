@@ -1,13 +1,13 @@
 {
   "remote": {
     "host": "127.0.0.1",
-    "port": 8838
+    "port": 8388
   },
   "local": {
     "host": "127.0.0.1",
-    "port": 1080
+    "port": 1081
   },
   "method": "aes-128-cfb",
-  "password": "foobar",
+  "password": "taodingfei13441344",
   "timeout": 300
 }

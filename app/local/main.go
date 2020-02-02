@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/jackie8tao/hkpxy/ss"
-	"github.com/jackie8tao/hkpxy/ss/cfg"
+	"github.com/jackie8tao/hkpxy/ssr"
+	"github.com/jackie8tao/hkpxy/ssr/cfg"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -85,7 +85,7 @@ func handleConn(conn net.Conn) {
 		log.Println(err)
 		return
 	}
-	p := &ss.Pipe{Lcl: conn, Rmt: rmt}
+	p := &ssr.Pipe{Lcl: conn, Rmt: rmt}
 	go p.Run()
 	return
 }
@@ -102,7 +102,7 @@ func handshake(conn net.Conn) error {
 		return err
 	}
 
-	if buf[idVer] != ss.Ss5VerVal {
+	if buf[idVer] != ssr.Ss5VerVal {
 		return errVer
 	}
 
@@ -118,7 +118,7 @@ func handshake(conn net.Conn) error {
 		}
 	}
 
-	_, err = conn.Write([]byte{ss.Ss5VerVal, ss.Ss5NoAuthVal})
+	_, err = conn.Write([]byte{ssr.Ss5VerVal, ssr.Ss5NoAuthVal})
 	if err != nil {
 		return err
 	}
@@ -145,22 +145,22 @@ func request(conn net.Conn) (addr []byte, err error) {
 		return
 	}
 
-	if buf[idVer] != ss.Ss5VerVal {
+	if buf[idVer] != ssr.Ss5VerVal {
 		err = errVer
 		return
 	}
-	if buf[idCmd] != ss.Ss5CmdConnect {
+	if buf[idCmd] != ssr.Ss5CmdConnect {
 		err = errCmd
 		return
 	}
 
 	msgLen := 0
 	switch buf[idAtyp] {
-	case ss.Ss5AtypIpV4:
+	case ssr.Ss5AtypIpV4:
 		msgLen = lenIPv4
-	case ss.Ss5AtypIpV6:
+	case ssr.Ss5AtypIpV6:
 		msgLen = lenIPv6
-	case ss.Ss5AtypDomain:
+	case ssr.Ss5AtypDomain:
 		msgLen = int(buf[idDmLen]) + lenDmBase
 	default:
 		err = errAddr
@@ -183,7 +183,7 @@ func request(conn net.Conn) (addr []byte, err error) {
 }
 
 func connRemote(addr []byte) (conn net.Conn, err error) {
-	conn, err = ss.DialRemote(
+	conn, err = ssr.DialSSR(
 		_cfg.RemoteVal(), _cfg.Method, _cfg.Password,
 	)
 	if err != nil {

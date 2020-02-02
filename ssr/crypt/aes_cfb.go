@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/jackie8tao/hkpxy/ss/spt"
+	"github.com/jackie8tao/hkpxy/ssr/spt"
 )
 
 type aesCfb struct {
@@ -17,22 +17,18 @@ type aesCfb struct {
 }
 
 func (c *aesCfb) Setup(key string) error {
-	val, err := spt.EvpBytes2Key(key, c.keyLen)
-	if err != nil {
-		return err
-	}
-	c.key = val
+	c.key = spt.EVPBytes2Key(key, c.keyLen)
 	return nil
 }
 
 func (c *aesCfb) Encrypt(val []byte) (ret []byte, err error) {
-	blk, err := aes.NewCipher(c.key)
-	if err != nil {
-		return
-	}
-
 	var iv []byte
 	if c.enc == nil {
+		var blk cipher.Block
+		blk, err = aes.NewCipher(c.key)
+		if err != nil {
+			return
+		}
 		iv, err = spt.IV(c.ivLen)
 		if err != nil {
 			return
@@ -52,12 +48,12 @@ func (c *aesCfb) Encrypt(val []byte) (ret []byte, err error) {
 }
 
 func (c *aesCfb) Decrypt(val []byte) (ret []byte, err error) {
-	blk, err := aes.NewCipher(c.key)
-	if err != nil {
-		return
-	}
-
 	if c.dec == nil {
+		var blk cipher.Block
+		blk, err = aes.NewCipher(c.key)
+		if err != nil {
+			return
+		}
 		var iv []byte
 		iv, val = val[:c.ivLen], val[c.ivLen:]
 		if c.iv == nil {
@@ -77,4 +73,16 @@ func (c *aesCfb) Clone() ICipher {
 		keyLen: c.keyLen,
 		ivLen:  c.ivLen,
 	}
+}
+
+func (c *aesCfb) Key() []byte {
+	ret := make([]byte, c.keyLen)
+	copy(ret, c.key)
+	return ret
+}
+
+func (c *aesCfb) IV() []byte {
+	ret := make([]byte, c.ivLen)
+	copy(ret, c.iv)
+	return ret
 }
